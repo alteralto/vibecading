@@ -1,13 +1,11 @@
-# vibecading
+# VibeCADing
 
-Vibe CADing: describe what you need, get real, editable CAD geometry back.
+**Vibe CADing for the built and the imagined**
 
-The idea is simple. You state intent in plain words and the tool turns it into drawings and models
-that stay measurable and checkable. Nothing is a picture of a drawing; everything is geometry you can open,
-dimension and change in your usual CAD software.
+An open innovation lab for AI-native tools in architecture, 3D, games and creative work
 
-Early stage. Code and docs will land here as they get ready.
+This repository holds the site at [vibecading.io](https://vibecading.io). Discussions live in [the organization](https://github.com/orgs/vibecading/discussions), the tool catalog in [awesome-vibecading](https://github.com/vibecading/awesome-vibecading)
 
 ## License
 
-Apache License 2.0, see [LICENSE](LICENSE).
+Apache License 2.0, see [LICENSE](LICENSE)

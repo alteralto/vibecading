@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VibeCADing</title>
+<meta name="description" content="An open innovation lab for AI-native tools in architecture, 3D, games and creative work">
+<meta property="og:title" content="VibeCADing">
+<meta property="og:description" content="Vibe CADing for the built and the imagined">
+<meta property="og:url" content="https://vibecading.io/">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231C3F94'/%3E%3Cpath d='M16 6l9 5v10l-9 5-9-5V11z M16 16l9-5 M16 16v10 M16 16l-9-5' fill='none' stroke='%23EAF0FF' stroke-width='1.6' stroke-linejoin='round'/%3E%3Ccircle cx='25' cy='21' r='2.4' fill='%23FF6FB0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&family=Unbounded:wght@500;600&display=swap">
+<style>
+:root {
+  --paper: #F4F6FA;
+  --ink: #0D1838;
+  --muted: #4B5675;
+  --rule: #D3DAE8;
+  --blue: #1C3F94;
+  --chalk: #EAF0FF;
+  --chalk-soft: rgba(234, 240, 255, .74);
+  --pink: #FF6FB0;
+  --pink-ink: #B3125E;
+  --hatch: rgba(13, 24, 56, .13);
+  --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --text: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --gutter: clamp(16px, 4vw, 40px);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0B1330;
+    --ink: #E6ECFA;
+    --muted: #9AA6C4;
+    --rule: #26325C;
+    --blue: #17357E;
+    --pink-ink: #FF8CC0;
+    --hatch: rgba(230, 236, 250, .10);
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1.0625rem/1.6 var(--text);
+}
+a { color: inherit; text-underline-offset: .2em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--pink); outline-offset: 3px; border-radius: 2px; }
+.wrap { max-width: 1180px; margin-inline: auto; padding-inline: var(--gutter); }
+
+/* hero: cyanotype sheet */
+.sheet {
+  background-color: var(--blue);
+  background-image:
+    linear-gradient(rgba(234, 240, 255, .07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(234, 240, 255, .07) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: var(--chalk);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding-block: 1.25rem;
+}
+.mark { font: 600 1.05rem/1 var(--display); letter-spacing: -.01em; text-decoration: none; }
+.bar nav { display: flex; gap: 1.5rem; font-size: .95rem; }
+.bar nav a { color: var(--chalk-soft); text-decoration: none; }
+.bar nav a:hover { color: var(--chalk); text-decoration: underline; }
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: center;
+  padding-block: clamp(2.5rem, 7vw, 5.5rem) clamp(3rem, 7vw, 6rem);
+}
+.hero h1 {
+  font: 600 clamp(2rem, 3.9vw, 3.35rem)/1.06 var(--display);
+  letter-spacing: -.025em;
+  margin: 0 0 1.5rem;
+  text-wrap: balance;
+}
+.sub { font-size: clamp(1.1rem, 1.6vw, 1.3rem); line-height: 1.5; color: var(--chalk-soft); max-width: 30em; margin: 0 0 2.25rem; }
+.actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 0; }
+.btn {
+  display: inline-block; padding: .8rem 1.25rem; border-radius: 3px;
+  border: 1px solid rgba(234, 240, 255, .5);
+  font-weight: 500; text-decoration: none;
+}
+.btn:hover { border-color: var(--chalk); text-decoration: none; }
+.btn.solid { background: var(--chalk); color: var(--blue); border-color: var(--chalk); }
+
+.stage { position: relative; }
+.stage canvas { display: block; width: 100%; aspect-ratio: 5 / 4; max-width: 100%; }
+.pause {
+  position: absolute; top: .25rem; right: 0;
+  background: transparent; color: var(--chalk-soft);
+  border: 1px solid rgba(234, 240, 255, .3); border-radius: 3px;
+  font: 500 .8rem/1 var(--text); padding: .45rem .7rem; cursor: pointer;
+}
+.pause:hover { color: var(--chalk); border-color: var(--chalk); }
+.prompts { list-style: none; margin: .75rem 0 0; padding: 0; display: grid; gap: .4rem; }
+.prompts button {
+  width: 100%; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+  text-align: left; cursor: pointer;
+  background: rgba(13, 24, 56, .18); color: var(--chalk-soft);
+  border: 0; border-left: 3px solid rgba(234, 240, 255, .35);
+  padding: .55rem .8rem; font: 400 .95rem/1.35 var(--text);
+}
+.prompts button[data-kind="imagined"] { border-left-color: rgba(255, 111, 176, .45); }
+.prompts button:hover { color: var(--chalk); }
+.prompts button[aria-pressed="true"] { background: rgba(13, 24, 56, .42); color: var(--chalk); border-left-color: var(--chalk); }
+.prompts button[aria-pressed="true"][data-kind="imagined"] { border-left-color: var(--pink); }
+.prompts small { font-size: .78rem; color: rgba(234, 240, 255, .55); white-space: nowrap; }
+.note { font-size: .82rem; color: rgba(234, 240, 255, .55); margin: .75rem 0 0; }
+
+/* body */
+.manifest { padding-block: clamp(3.5rem, 8vw, 6.5rem) clamp(2.5rem, 5vw, 4rem); }
+.manifest p {
+  font: 400 clamp(1.3rem, 2.3vw, 1.75rem)/1.45 var(--text);
+  max-width: 34em; margin: 0;
+}
+h2 { font: 600 clamp(1.5rem, 2.6vw, 2.1rem)/1.15 var(--display); letter-spacing: -.015em; margin: 0 0 .75rem; }
+.lead { color: var(--muted); max-width: 38em; margin: 0 0 2.5rem; }
+section.block { padding-block: clamp(2.5rem, 6vw, 4.5rem); }
+
+.layer {
+  display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  gap: 1rem 3rem; padding-block: 2rem; border-top: 1px solid var(--rule);
+}
+.layer h3 { font: 600 1.35rem/1.2 var(--display); margin: 0 0 .4rem; }
+.layer header p { margin: 0; color: var(--muted); font-size: .95rem; }
+.layer.closed header {
+  padding: 1rem;
+  margin: -1rem 0 0 -1rem;
+  background: repeating-linear-gradient(45deg, var(--hatch) 0 1px, transparent 1px 9px);
+}
+.items { margin: 0; display: grid; gap: 1.25rem; }
+.item { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 6.5rem; gap: .25rem 1.5rem; align-items: baseline; }
+.item dt { font-weight: 500; }
+.item dd { margin: 0; }
+.item .status { color: var(--muted); font-size: .88rem; text-align: right; }
+.item .status.now { color: var(--pink-ink); }
+
+.core h2 { font-size: clamp(1.9rem, 4vw, 3.2rem); max-width: 14em; }
+.acts {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2.25rem clamp(2rem, 5vw, 4.5rem); margin: 0 0 2.5rem; max-width: 62rem;
+}
+.acts dt { font: 600 1.15rem/1.3 var(--display); margin-bottom: .4rem; }
+.acts dd { margin: 0; color: var(--muted); }
+.btn.ink { background: var(--blue); color: var(--chalk); border-color: var(--blue); }
+.btn.ink:hover { border-color: var(--pink); }
+.table-scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 34rem; font-size: .98rem; }
+th, td { text-align: left; padding: .8rem 1.25rem .8rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 500; color: var(--muted); font-size: .9rem; }
+
+.contribute p { max-width: 36em; }
+footer { border-top: 1px solid var(--rule); padding-block: 2rem calc(2rem + env(safe-area-inset-bottom, 0px)); color: var(--muted); font-size: .92rem; }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
+
+@media (max-width: 860px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .layer { grid-template-columns: minmax(0, 1fr); }
+  .acts { grid-template-columns: minmax(0, 1fr); }
+  .layer.closed header { margin: 0; }
+  .item { grid-template-columns: minmax(0, 1fr) auto; }
+  .item dd:not(.status) { grid-column: 1 / -1; grid-row: 2; }
+  .item .status { grid-column: 2; grid-row: 1; }
+}
+@media (max-width: 480px) {
+  .bar nav { gap: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="sheet">
+  <header class="wrap bar">
+    <a class="mark" href="/">VibeCADing</a>
+    <nav aria-label="Main">
+      <a href="https://github.com/orgs/vibecading/discussions">Discussions</a>
+      <a href="https://github.com/vibecading/awesome-vibecading">Catalog</a>
+      <a href="https://github.com/vibecading">GitHub</a>
+    </nav>
+  </header>
+
+  <main class="wrap hero">
+    <div>
+      <h1>Vibe CADing for the built and the imagined</h1>
+      <p class="sub">An open innovation lab for AI-native tools in architecture, 3D, games and creative work</p>
+      <p class="actions">
+        <a class="btn solid" href="https://github.com/orgs/vibecading/discussions">Join the discussion</a>
+        <a class="btn" href="https://github.com/vibecading/awesome-vibecading">Browse the catalog</a>
+      </p>
+    </div>
+
+    <div class="stage">
+      <canvas id="geo" role="img" aria-label="A point drawing of a courtyard block, seven floors"></canvas>
+      <button class="pause" id="pause" type="button">Pause</button>
+      <ul class="prompts" id="prompts"></ul>
+      <p class="note">Example prompts. Shapes are sketched in code, live in your browser</p>
+    </div>
+  </main>
+</div>
+
+<section class="wrap manifest">
+  <p>Architects, 3D artists and game developers already describe what they want in words. vibecading connects those words to the software that does the work: Rhino, Revit, Blender, Unreal, Godot, TouchDesigner and the rest. What comes back is real geometry you can open, measure and change</p>
+</section>
+
+<section class="wrap block core" aria-labelledby="core-h">
+  <h2 id="core-h">The community is the lab</h2>
+  <p class="lead">People who build with words, show their work and argue about it. Tools and products grow out of those conversations</p>
+  <dl class="acts">
+    <div><dt><a href="https://github.com/orgs/vibecading/discussions/categories/show-your-work">Show your work</a></dt><dd>What you built, which prompts got you there, and where it broke</dd></div>
+    <div><dt><a href="https://github.com/orgs/vibecading/discussions/categories/critique">Critique</a></dt><dd>Post a work in progress. Architects, 3D artists and game developers review it honestly</dd></div>
+    <div><dt><a href="https://github.com/orgs/vibecading/discussions/categories/proposals">Proposals</a></dt><dd>Suggest a tool, a connector or a test task. The ones people back get built in the open</dd></div>
+    <div><dt>Vibe Jam</dt><dd>One brief a month, a few hours, everything made by prompting</dd></div>
+  </dl>
+  <p class="actions"><a class="btn ink" href="https://github.com/orgs/vibecading/discussions">Join the discussion</a></p>
+</section>
+
+<section class="wrap block" aria-labelledby="layers-h">
+  <h2 id="layers-h">What grows out of it</h2>
+  <p class="lead">The open layer is for reach and compatibility. The closed one pays for it</p>
+
+  <article class="layer">
+    <header>
+      <h3>Open</h3>
+      <p>Free to use, fork and build on</p>
+    </header>
+    <dl class="items">
+      <div class="item">
+        <dt><a href="https://github.com/vibecading/awesome-vibecading">awesome-vibecading</a></dt>
+        <dd>A catalog of AI tools for creative software, sorted by program and by task. Competitors included</dd>
+        <dd class="status now">Being built</dd>
+      </div>
+      <div class="item">
+        <dt>skills</dt>
+        <dd>MCP connectors and agent skills, so Claude Code, Codex or Cursor can drive the software you already use</dd>
+        <dd class="status">Next</dd>
+      </div>
+      <div class="item">
+        <dt>bench</dt>
+        <dd>Tasks with automatic checks: right dimensions, closed meshes, valid models. Architecture first, then 3D and games</dd>
+        <dd class="status">Later</dd>
+      </div>
+      <div class="item">
+        <dt>Short films</dt>
+        <dd>Screen recordings of one task done with words, start to finish</dd>
+        <dd class="status">Later</dd>
+      </div>
+    </dl>
+  </article>
+
+  <article class="layer closed">
+    <header>
+      <h3>Products</h3>
+      <p>Closed, for specialists</p>
+    </header>
+    <dl class="items">
+      <div class="item">
+        <dt>Pro tools</dt>
+        <dd>Paid tools built on top of the open layer. Announced to the community first</dd>
+        <dd class="status">Later</dd>
+      </div>
+    </dl>
+  </article>
+</section>
+
+<section class="wrap block" aria-labelledby="stores-h">
+  <h2 id="stores-h">Where the tools will live</h2>
+  <p class="lead">Open tools ship to the stores people already use for add-ons, with a link back here</p>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th scope="col">Store</th><th scope="col">For</th><th scope="col">Paid tools</th></tr></thead>
+      <tbody>
+        <tr><td>Fab</td><td>Unreal Engine, Unity, 3D assets</td><td>Yes</td></tr>
+        <tr><td>Food4Rhino and Yak</td><td>Rhino, Grasshopper</td><td>Yes, with a link to buy</td></tr>
+        <tr><td>Blender Extensions</td><td>Blender</td><td>Free only. Paid tools go to Superhive</td></tr>
+        <tr><td>Godot Asset Library</td><td>Godot</td><td>Free only. Paid tools go to itch.io</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap block contribute" aria-labelledby="add-h">
+  <h2 id="add-h">Add to the catalog</h2>
+  <p>Know a tool that belongs in the list, or one that is listed wrong? <a href="https://github.com/vibecading/awesome-vibecading">Open an issue or a pull request</a>, or bring it up in <a href="https://github.com/orgs/vibecading/discussions">the discussions</a></p>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>VibeCADing. Open parts are licensed under Apache-2.0</span>
+    <a href="https://github.com/vibecading">github.com/vibecading</a>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const N = 3200;
+
+  // seeded random so shapes look the same on every visit
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+  function box(E, x0, y0, z0, x1, y1, z1) {
+    const c = [[x0,z0],[x1,z0],[x1,z1],[x0,z1]];
+    for (let i = 0; i < 4; i++) {
+      const [ax, az] = c[i], [bx, bz] = c[(i + 1) % 4];
+      E.push([ax,y0,az, bx,y0,bz], [ax,y1,az, bx,y1,bz], [ax,y0,az, ax,y1,az]);
+    }
+  }
+  function rect(E, x0, z0, x1, z1, y) {
+    E.push([x0,y,z0, x1,y,z0], [x1,y,z0, x1,y,z1], [x1,y,z1, x0,y,z1], [x0,y,z1, x0,y,z0]);
+  }
+  function ring(E, pts) {
+    for (let i = 0; i < pts.length; i++) E.push([...pts[i], ...pts[(i + 1) % pts.length]]);
+  }
+
+  function courtyard() {
+    const E = [], h = 3.2, floors = 7, top = h * floors;
+    for (let f = 0; f <= floors; f++) { rect(E, 0, 0, 24, 18, f * h); rect(E, 6, 5, 18, 13, f * h); }
+    for (const [x, z] of [[0,0],[24,0],[24,18],[0,18],[6,5],[18,5],[18,13],[6,13]]) E.push([x,0,z, x,top,z]);
+    return E;
+  }
+
+  function island() {
+    const E = [], k = 10;
+    const radii = Array.from({ length: k }, () => 11 * (0.78 + 0.22 * rnd()));
+    const layer = (y, s) => radii.map((r, i) => {
+      const a = i / k * Math.PI * 2;
+      return [Math.cos(a) * r * s, y, Math.sin(a) * r * s];
+    });
+    const rings = [layer(0, 1), layer(-3, 0.74), layer(-7, 0.38)];
+    rings.forEach(r => ring(E, r));
+    for (let j = 0; j < 2; j++) for (let i = 0; i < k; i++) E.push([...rings[j][i], ...rings[j + 1][i]]);
+    for (let i = 0; i < k; i++) E.push([...rings[2][i], 0, -12, 0]);
+    // lighthouse
+    const lx = 2.5, lz = -1.5, sides = 8;
+    const tower = (y, r) => Array.from({ length: sides }, (_, i) => {
+      const a = i / sides * Math.PI * 2;
+      return [lx + Math.cos(a) * r, y, lz + Math.sin(a) * r];
+    });
+    const levels = [[0, 1.9], [3, 1.65], [6, 1.4], [9, 1.2], [10.6, 1.5]];
+    levels.forEach(([y, r]) => ring(E, tower(y, r)));
+    const base = tower(0, 1.9), neck = tower(9, 1.2), lamp = tower(10.6, 1.5);
+    for (let i = 0; i < sides; i++) { E.push([...base[i], ...neck[i]]); E.push([...lamp[i], lx, 12.8, lz]); }
+    // waterfall over the rim
+    const [wx, wy, wz] = rings[0][2];
+    for (let i = 0; i < 4; i++) E.push([wx - 0.6 * i, wy, wz + 0.3 * i, wx * 1.05 - 0.6 * i, -16, wz * 1.05 + 0.3 * i]);
+    return E;
+  }
+
+  function pavilion() {
+    const E = [], s = 14, hs = [3, 8, 3, 8];
+    const P = [[0,hs[0],0], [s,hs[1],0], [s,hs[2],s], [0,hs[3],s]];
+    rect(E, -2, -2, s + 2, s + 2, 0);
+    rect(E, -2, -2, s + 2, s + 2, 0.5);
+    P.forEach(([x, y, z]) => E.push([x,0,z, x,y,z]));
+    const S = (u, v) => [0, 1, 2].map(d =>
+      (1-u)*(1-v)*P[0][d] + u*(1-v)*P[1][d] + u*v*P[2][d] + (1-u)*v*P[3][d]);
+    const n = 12;
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      E.push([...S(t, 0), ...S(t, 1)], [...S(0, t), ...S(1, t)]);
+    }
+    return E;
+  }
+
+  function dungeon() {
+    const E = [], t = 2, n = 7, w = t * n;
+    for (let i = 0; i <= n; i++) E.push([i*t,0,0, i*t,0,w], [0,0,i*t, w,0,i*t]);
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      const edge = i === 0 || j === 0 || i === n - 1 || j === n - 1;
+      if (!edge || (j === 0 && i === 3)) continue;
+      const stack = 1 + (rnd() < 0.55 ? 1 : 0);
+      for (let b = 0; b < stack; b++) box(E, i*t, b*t, j*t, (i+1)*t, (b+1)*t, (j+1)*t);
+    }
+    box(E, 3*t, 0, 3*t, 4*t, t, 4*t); box(E, 3*t, t, 3*t, 4*t, 2*t, 4*t);
+    box(E, 5*t + 0.2, 0, 5*t + 0.5, 6*t - 0.2, 1.1, 6*t - 0.3);
+    return E;
+  }
+
+  function sample(E) {
+    const lens = E.map(e => Math.hypot(e[3]-e[0], e[4]-e[1], e[5]-e[2]));
+    const total = lens.reduce((a, b) => a + b, 0);
+    let mn = [1e9,1e9,1e9], mx = [-1e9,-1e9,-1e9];
+    E.forEach(e => { for (let d = 0; d < 3; d++) { mn[d] = Math.min(mn[d], e[d], e[d+3]); mx[d] = Math.max(mx[d], e[d], e[d+3]); } });
+    const c = mn.map((v, d) => (v + mx[d]) / 2);
+    const k = 2.3 / Math.max(mx[0]-mn[0], mx[1]-mn[1], mx[2]-mn[2]);
+    const out = new Float32Array(N * 3);
+    let ei = 0, acc = 0;
+    for (let i = 0; i < N; i++) {
+      const target = (i + 0.5) / N * total;
+      while (acc + lens[ei] < target && ei < E.length - 1) acc += lens[ei++];
+      const e = E[ei], f = lens[ei] ? (target - acc) / lens[ei] : 0;
+      for (let d = 0; d < 3; d++) out[i*3+d] = (e[d] + (e[d+3] - e[d]) * f - c[d]) * k;
+    }
+    return out;
+  }
+
+  const shapes = [
+    { prompt: "A courtyard block, seven floors, 24 by 18 m", kind: "built", label: "a courtyard block, seven floors", pts: sample(courtyard()) },
+    { prompt: "A floating island with a lighthouse, low-poly", kind: "imagined", label: "a floating island with a lighthouse", pts: sample(island()) },
+    { prompt: "A pavilion with a hyperbolic paraboloid roof", kind: "built", label: "a pavilion with a saddle-shaped roof", pts: sample(pavilion()) },
+    { prompt: "A dungeon room for a roguelike, 7 by 7 tiles", kind: "imagined", label: "a dungeon room on a tile grid", pts: sample(dungeon()) },
+  ];
+
+  const canvas = document.getElementById("geo");
+  const ctx = canvas.getContext("2d");
+  const list = document.getElementById("prompts");
+  const pauseBtn = document.getElementById("pause");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)");
+
+  const buttons = shapes.map((s, i) => {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.kind = s.kind;
+    b.innerHTML = `<span></span><small>${s.kind}</small>`;
+    b.firstChild.textContent = s.prompt;
+    b.addEventListener("click", () => go(i, true));
+    li.appendChild(b);
+    list.appendChild(li);
+    return b;
+  });
+
+  let from = 0, to = 0, t0 = 0, morphing = false, last = performance.now(), held = 0;
+  let angle = 0.65, playing = !reduce.matches;
+  const MORPH = 1800, HOLD = 4200;
+
+  function go(i, byUser) {
+    if (i === to && !morphing) return;
+    from = to; to = i; t0 = performance.now(); held = 0;
+    morphing = !reduce.matches;
+    buttons.forEach((b, j) => b.setAttribute("aria-pressed", String(j === i)));
+    canvas.setAttribute("aria-label", "A point drawing of " + shapes[i].label);
+    if (byUser && !reduce.matches) held = -2500;
+    if (!running) frame(performance.now());
+  }
+
+  pauseBtn.addEventListener("click", () => {
+    playing = !playing;
+    pauseBtn.textContent = playing ? "Pause" : "Play";
+    if (playing && !running) { last = performance.now(); frame(last); }
+  });
+  if (!playing) pauseBtn.textContent = "Play";
+
+  let W = 0, H = 0, dpr = 1;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const r = canvas.getBoundingClientRect();
+    W = r.width; H = r.height;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    if (!running) draw();
+  }
+  new ResizeObserver(resize).observe(canvas);
+
+  const STEPS = 12;
+  const mix = (a, b, w) => a.map((v, i) => Math.round(v + (b[i] - v) * w));
+  const chalk = [234, 240, 255], pink = [255, 111, 176];
+  const palette = Array.from({ length: STEPS + 1 }, (_, k) => `rgb(${mix(chalk, pink, k / STEPS).join(",")})`);
+  const ease = x => x < .5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3) / 2;
+
+  function draw() {
+    if (!W) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    const p = morphing ? Math.min(1, (performance.now() - t0) / MORPH) : 1;
+    const A = shapes[from].pts, B = shapes[to].pts;
+    const kA = shapes[from].kind === "imagined" ? 1 : 0, kB = shapes[to].kind === "imagined" ? 1 : 0;
+    const ca = Math.cos(angle), sa = Math.sin(angle), tilt = 0.5, ct = Math.cos(tilt), st = Math.sin(tilt);
+    const scale = Math.min(W, H) * 0.3, cx = W / 2, cy = H * 0.52, dist = 6;
+    const buckets = Array.from({ length: STEPS + 1 }, () => []);
+    for (let i = 0; i < N; i++) {
+      const local = ease(Math.max(0, Math.min(1, p * 1.5 - i / N * 0.5)));
+      const x = A[i*3] + (B[i*3] - A[i*3]) * local;
+      const y = A[i*3+1] + (B[i*3+1] - A[i*3+1]) * local;
+      const z = A[i*3+2] + (B[i*3+2] - A[i*3+2]) * local;
+      const xr = x * ca - z * sa, zr = x * sa + z * ca;
+      const yr = y * ct - zr * st, zd = y * st + zr * ct;
+      const s = dist / (dist - zd);
+      const k = Math.round((kA + (kB - kA) * local) * STEPS);
+      buckets[k].push(cx + xr * s * scale, cy - yr * s * scale, 0.9 + s * 0.5);
+    }
+    buckets.forEach((b, k) => {
+      if (!b.length) return;
+      ctx.fillStyle = palette[k];
+      for (let j = 0; j < b.length; j += 3) ctx.fillRect(b[j], b[j+1], b[j+2], b[j+2]);
+    });
+    if (p >= 1) morphing = false;
+  }
+
+  let running = false;
+  function frame(now) {
+    const dt = Math.min(64, now - last); last = now;
+    if (playing) {
+      angle += dt * 0.00018;
+      if (!morphing) { held += dt; if (held > HOLD) go((to + 1) % shapes.length, false); }
+    }
+    draw();
+    running = playing || morphing;
+    if (running) requestAnimationFrame(frame);
+  }
+
+  reduce.addEventListener("change", () => {
+    playing = !reduce.matches;
+    pauseBtn.textContent = playing ? "Pause" : "Play";
+    if (playing && !running) { last = performance.now(); frame(last); }
+  });
+
+  buttons[0].setAttribute("aria-pressed", "true");
+  resize();
+  last = performance.now();
+  frame(last);
+})();
+</script>
+</body>
+</html>
